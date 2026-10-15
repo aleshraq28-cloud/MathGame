@@ -147,8 +147,10 @@ ENV APP_ENV=production \
 
 EXPOSE 10000
 
+# Shell-form CMD (not JSON) runs via /bin/sh -c so $PORT expands at check time.
+# $$ becomes $ in the image; Render sets PORT (default 10000 from ENV above).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
-    CMD-SHELL curl -fsS "http://127.0.0.1:$${PORT}/up" || exit 1
+    CMD curl -fsS "http://127.0.0.1:$${PORT}/up" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

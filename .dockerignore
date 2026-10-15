@@ -1,0 +1,82 @@
+# Secrets — never bake into the image
+.env
+.env.*
+!.env.example
+auth.json
+
+# Git / IDE / local tooling
+.git
+.gitignore
+.gitattributes
+.github
+.agents
+.amp
+.claude
+.cursor
+.factory
+.fleet
+.grok
+.idea
+.junie
+.kiro
+.nova
+.pi
+.vscode
+.zed
+*.md
+!DEPLOY.md
+AGENTS.md
+CLAUDE.md
+boost.json
+opencode.json
+opencode.jsonc
+.mcp.json
+
+# Dependencies (reinstalled in the image)
+/vendor
+/node_modules
+
+# Frontend build outputs (rebuilt in the image)
+/public/build
+/public/hot
+/public/fonts-manifest.dev.json
+/bootstrap/ssr
+
+# Generated Wayfinder TS (regenerated during npm run build)
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+
+# Tests & local quality tooling (not needed at runtime)
+/tests
+/phpunit.xml
+/phpstan.neon
+/pint.json
+.phpunit.cache
+.phpunit.result.cache
+.phpactor.json
+
+# Storage artifacts / logs / caches
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/pail
+/storage/*.key
+!/storage/framework/.gitignore
+!/storage/logs/.gitignore
+!/storage/app/.gitignore
+!/storage/app/public/.gitignore
+
+# Misc
+.DS_Store
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+docker-compose*.yml
+*.sql
+*.sqlite
+database/database.sqlite
+storage/inertia-devtools

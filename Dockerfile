@@ -29,20 +29,17 @@ COPY public/index.php ./public/index.php
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev --no-interaction
 
 
-# ===== 2) Frontend assets (Vite + Wayfinder needs PHP + vendor) ==============
-FROM node:22-bookworm AS frontend
+# ===== 2) Frontend assets ====================================================
+# Use PHP 8.3 (Laravel 13 requires ^8.3). Debian bookworm's default php-cli is
+# 8.2 and causes `php artisan` to exit 255 during Wayfinder's generate step.
+FROM php:8.3-cli-bookworm AS frontend
 
-# Wayfinder runs `php artisan` during `npm run build`
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        php-cli \
-        php-mbstring \
-        php-xml \
-        php-curl \
-        php-zip \
-        php-sqlite3 \
-        unzip \
-    && rm -rf /var/lib/apt/lists/*
+# Node 22 binaries from the official image (vite-plus needs Node ^22.18 / >=24.11)
+COPY --from=node:22-bookworm /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-bookworm /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && node -v && npm -v && php -v
 
 WORKDIR /app
 
@@ -51,23 +48,40 @@ COPY package.json package-lock.json .npmrc ./
 COPY resources ./resources
 COPY vite.config.ts tsconfig.json components.json ./
 COPY public ./public
-COPY .env.example ./.env.example
 
-# Minimal env so artisan/wayfinder can boot during the asset build only.
-# This key is NOT the production APP_KEY — never bake secrets into the image.
 RUN mkdir -p \
-        storage/framework/cache \
+        storage/framework/cache/data \
         storage/framework/sessions \
         storage/framework/views \
         storage/logs \
+        storage/app/public \
         bootstrap/cache \
-    && cp .env.example .env \
-    && php artisan key:generate --force --no-interaction \
-    && php artisan package:discover --ansi \
-    && npm ci \
-    && npm run build \
+    && chmod -R 777 storage bootstrap/cache
+
+# Build-time only placeholders so artisan/Wayfinder can boot.
+# Not written into a .env file, not the production APP_KEY, not used at runtime.
+# No MySQL: use array/sync drivers so package:discover / wayfinder never touch DB.
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    APP_KEY=base64:MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE= \
+    APP_URL=http://localhost \
+    DB_CONNECTION=sqlite \
+    DB_DATABASE=:memory: \
+    SESSION_DRIVER=array \
+    CACHE_STORE=array \
+    QUEUE_CONNECTION=sync \
+    LOG_CHANNEL=stderr
+
+# Composer installed --no-scripts, so discover packages explicitly (no DB needed).
+RUN php artisan package:discover --ansi --no-interaction
+
+# Lockfile is committed (package-lock.json). npm ci must succeed against it.
+RUN npm ci
+
+# Wayfinder runs `php artisan wayfinder:generate` inside this build.
+RUN npm run build \
     && test -f public/build/manifest.json \
-    && rm -f .env public/hot
+    && rm -f public/hot
 
 
 # ===== 3) Runtime: nginx + php-fpm ===========================================
@@ -97,7 +111,6 @@ RUN apt-get update \
         pcntl \
     && rm -rf /var/lib/apt/lists/*
 
-# PHP / php-fpm production defaults
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/php/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
@@ -147,8 +160,7 @@ ENV APP_ENV=production \
 
 EXPOSE 10000
 
-# Shell-form CMD (not JSON) runs via /bin/sh -c so $PORT expands at check time.
-# $$ becomes $ in the image; Render sets PORT (default 10000 from ENV above).
+# Shell-form CMD runs via /bin/sh -c so $PORT expands at check time.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:$${PORT}/up" || exit 1
 

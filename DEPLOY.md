@@ -174,7 +174,10 @@ Laravel exposes `GET /up`. In Render, set Health Check Path to `/up` if prompted
 Multi-stage build:
 
 1. **Composer** — `composer install --no-dev`
-2. **Node 22** — `npm ci` + `npm run build` (PHP CLI present so Wayfinder can generate TS routes)
+2. **Frontend** — `php:8.3-cli` + Node 22 binaries, then `npm ci` + `npm run build`  
+   - Laravel 13 needs **PHP 8.3**. Using Debian’s default `php-cli` (8.2) made `php artisan` exit **255** during Wayfinder.  
+   - No `key:generate` and no production `.env` during build; a throwaway `APP_KEY` env var is set only in that build stage.  
+   - Build uses `SESSION_DRIVER=array` / `CACHE_STORE=array` / sqlite `:memory:` so nothing talks to MySQL.
 3. **Runtime** — `php:8.3-fpm` + nginx + supervisord  
    - Document root: `/var/www/html/public`  
    - Listens on `0.0.0.0:$PORT`  

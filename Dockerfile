@@ -113,7 +113,8 @@ RUN apt-get update \
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
-COPY docker/php/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
+# Keep the image's zz-docker.conf ([global] daemonize = no). Only override pool listen/env.
+COPY docker/php/zzz-laravel.conf /usr/local/etc/php-fpm.d/zzz-laravel.conf
 
 WORKDIR /var/www/html
 
@@ -139,8 +140,9 @@ COPY .env.example ./.env.example
 COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/start-nginx.sh /usr/local/bin/start-nginx.sh
 
-RUN chmod +x /usr/local/bin/entrypoint.sh \
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-nginx.sh \
     && rm -f /etc/nginx/sites-enabled/default \
     && mkdir -p \
         storage/framework/cache/data \

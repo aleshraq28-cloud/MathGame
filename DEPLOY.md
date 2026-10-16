@@ -243,7 +243,8 @@ Then open `http://localhost:10000`.
 | `docker/supervisor/supervisord.conf` | Runs nginx + php-fpm |
 | `docker/php/opcache.ini` | OPcache for production |
 | `docker/php/uploads.ini` | Upload/memory limits |
-| `docker/php/zz-docker.conf` | php-fpm keeps Render env vars (`clear_env = no`) |
+| `docker/php/zzz-laravel.conf` | php-fpm listen `127.0.0.1:9000` + `clear_env = no` (does not replace image `zz-docker.conf`) |
+| `docker/start-nginx.sh` | Waits for php-fpm before starting nginx |
 | `DEPLOY.md` | This document |
 
 Small app change for Render HTTPS proxying:

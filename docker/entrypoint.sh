@@ -78,5 +78,13 @@ php artisan route:cache --no-interaction || true
 php artisan view:cache --no-interaction || true
 php artisan event:cache --no-interaction || true
 
-echo "[entrypoint] Starting supervisord (nginx + php-fpm)…"
+# Validate php-fpm pool config before supervisord starts (fails fast with a clear error).
+echo "[entrypoint] Testing php-fpm configuration…"
+php-fpm -t
+
+# Confirm FastCGI listen target matches nginx (127.0.0.1:9000).
+echo "[entrypoint] php-fpm listen overrides:"
+grep -RIn --include='*.conf' '^\s*listen\s*=' /usr/local/etc/php-fpm.d || true
+
+echo "[entrypoint] Starting supervisord (php-fpm then nginx)…"
 exec "$@"

@@ -1,5 +1,6 @@
 server {
-    listen ${PORT} default_server;
+    # Public HTTP for Railway/Render: bind all interfaces on $PORT (NOT php-fpm's 9000).
+    listen 0.0.0.0:${PORT} default_server;
     listen [::]:${PORT} default_server;
     server_name _;
 

@@ -22,10 +22,15 @@ if [ -z "${APP_URL:-}" ]; then
     echo "[entrypoint] WARNING: APP_URL is not set. Set it to your https://…onrender.com URL."
 fi
 
-# Render assigns PORT; substitute into the nginx site config.
+# PaaS assigns PORT; substitute into the nginx site config.
+# Public traffic must hit this port. php-fpm stays on 127.0.0.1:9000 only.
 envsubst '${PORT}' \
     < /etc/nginx/templates/default.conf.template \
     > /etc/nginx/conf.d/default.conf
+
+echo "[entrypoint] Generated nginx listen directives:"
+grep -E '^\s*listen\s+' /etc/nginx/conf.d/default.conf || true
+echo "[entrypoint] Railway/Render Target Port must equal PORT=${PORT} (not php-fpm 9000)."
 
 # Ensure writable runtime dirs (ephemeral disk on Render free tier).
 mkdir -p \
